@@ -1,0 +1,31 @@
+name: Daily Finance Report
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate report and send
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+        run: |
+          curl -X POST https://api.deepseek.com/v1/chat/completions \
+            -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "model": "deepseek-chat",
+              "messages": [
+                {"role": "system", "content": "请整合过去24小时全球财经、政治、科技领域最重要的5条新闻，每条附一句话点评，用微信格式发送，标题为《今日财经早餐》"},
+                {"role": "user", "content": "请生成今日简报"}
+              ]
+            }' \
+            -o response.json
+          CONTENT=$(cat response.json | jq -r '.choices[0].message.content')
+          curl -X POST https://www.pushplus.plus/send \
+            -H "Content-Type: application/json" \
+            -d "{\"token\":\"$PUSHPLUS_TOKEN\",\"title\":\"今日财经早餐\",\"content\":\"$CONTENT\"}"
