@@ -25,6 +25,7 @@ jobs:
               ]
             }' \
             -o response.json
+          cat response.json
           CONTENT=$(cat response.json | jq -r '.choices[0].delta.content')
           curl -X POST https://www.pushplus.plus/send \
             -H "Content-Type: application/json" \
