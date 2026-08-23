@@ -25,7 +25,7 @@ jobs:
               ]
             }' \
             -o response.json
-          CONTENT=$(cat response.json | jq -r '.choices[0].message.content')
+          CONTENT=$(cat response.json | jq -r '.choices[0].delta.content')
           curl -X POST https://www.pushplus.plus/send \
             -H "Content-Type: application/json" \
             -d "{\"token\":\"$PUSHPLUS_TOKEN\",\"title\":\"今日财经早餐\",\"content\":\"$CONTENT\"}"
