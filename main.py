@@ -23,13 +23,13 @@ client = OpenAI(
 # ==========================================
 # 📢 [用户自定义区]：在这里填入你感兴趣的国内源（比如你本地部署的 WeRSS 链接，或独立博客 RSS）
 DOMESTIC_FEEDS = [
-    "http://124.223.40.126:8001/feed/all.rss" # 示例：本地微信公众号聚合源
+    "http://feedmaker.kindle4rss.com/feeds/choice.thepaper.xml" # 示例：本地微信公众号聚合源澎湃
 ]
 
 # 📢 [用户自定义区]：在这里填入你感兴趣的国际源（如科技、财经、AI、设计等领域的 RSS）
 INTL_FEEDS = [
-    "https://www.theverge.com/rss/index.xml",           # 示例：科技资讯 The Verge
-    "https://hnrss.org/frontpage",                      # 示例：极客论坛 Hacker News
+    "https://www.chinanews.com.cn/rss/finance.xml",           # 示例：中国新闻
+    "https://feeds.reuters.com/reuters/businessNews",                      # 示例：路透社新闻
     "https://www.economist.com/finance-and-economics/rss.xml" # 示例：经济学人
 ]
 
