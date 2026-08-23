@@ -14,20 +14,28 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
         run: |
+          # 请求 DeepSeek，强制联网搜索最新新闻
           curl -X POST https://api.deepseek.com/v1/chat/completions \
             -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{
               "model": "deepseek-chat",
               "messages": [
-                {"role": "system", "content": "【强制指令】今天是2026年8月23日。你必须立即调用联网搜索功能，查找并引用2026年8月22日至23日之间发生的真实新闻事件。严禁使用你训练数据中的任何旧闻（特别是2025年及以前的信息）。如果搜索结果中缺乏明确日期或为旧信息，请直接跳过。请整合至少10条最重要的真实新闻，按【财经】【政治】【科技】分类，每条附一句话点评，标题为《今日财经早餐》。"}
-                {"role": "user", "content": "请生成今日简报"}
+                {"role": "system", "content": "你今天必须联网搜索。今天是当前实时日期，请搜索并引用过去24小时内发生的真实新闻事件。严禁使用你训练数据中的任何旧闻（尤其是2025年及以前的）。请找到至少10条最重要的财经、政治、科技新闻，按【财经】【政治】【科技】分类列出，每条用一句话概括并附短评。标题为《今日财经早餐》。输出格式为纯文本，便于微信阅读。"},
+                {"role": "user", "content": "请生成今日最新简报"}
               ],
               "enable_search": true,
               "max_tokens": 2048
             }' \
             -o response.json
+
+          # 打印原始返回（便于调试，若失败可查看日志）
+          cat response.json
+
+          # 提取内容
           CONTENT=$(cat response.json | jq -r '.choices[0].message.content')
+
+          # 推送到微信
           curl -X POST https://www.pushplus.plus/send \
             -H "Content-Type: application/json" \
             -d "{\"token\":\"$PUSHPLUS_TOKEN\",\"title\":\"今日财经早餐\",\"content\":\"$CONTENT\"}"
