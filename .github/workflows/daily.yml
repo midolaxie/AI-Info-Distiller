@@ -24,9 +24,8 @@ jobs:
                 {"role": "user", "content": "请生成今日简报"}
               ]
             }' \
-            -o response.json
-          cat response.json
-          CONTENT=$(cat response.json | jq -r '.choices[0].delta.content')
+            -o response.json  
+          CONTENT=$(cat response.json | jq -r '.choices[0].message.content')
           curl -X POST https://www.pushplus.plus/send \
             -H "Content-Type: application/json" \
             -d "{\"token\":\"$PUSHPLUS_TOKEN\",\"title\":\"今日财经早餐\",\"content\":\"$CONTENT\"}"
