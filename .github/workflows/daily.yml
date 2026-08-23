@@ -22,7 +22,8 @@ jobs:
               "messages": [
                 {"role": "system", "content": "请整合过去24小时全球财经、政治、科技领域最重要的5条新闻，每条附一句话点评，用微信格式发送，标题为《今日财经早餐》"},
                 {"role": "user", "content": "请生成今日简报"}
-              ]
+              ],
+              "enable_search": true
             }' \
             -o response.json  
           CONTENT=$(cat response.json | jq -r '.choices[0].message.content')
