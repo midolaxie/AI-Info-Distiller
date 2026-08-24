@@ -14,35 +14,32 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
         run: |
-          # 请求 DeepSeek（使用最新模型）
           curl -X POST https://api.deepseek.com/v1/chat/completions \
             -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{
-              "model": "deepseek-v4-pro",
+              "model": "deepseek-v4-flash",
               "messages": [
-                {"role": "system", "content": "今天是2026年8月23日。请联网搜索今天发生的财经、政治、科技新闻，至少10条，分类列出，标题《今日财经早餐》。必须附上来源链接。严禁使用2025年旧闻。"},
+                {"role": "system", "content": "今天是2026年8月23日。请搜索并整理今天发生的财经、政治、科技新闻，至少10条，分类列出，标题《今日财经早餐》。每条附来源链接。禁止使用旧数据。"},
                 {"role": "user", "content": "请生成今日简报"}
               ],
               "enable_search": true,
+              "search_options": {"force": true},
               "max_tokens": 4096
             }' \
             -o response.json
 
-          # 调试输出
           echo "=== RAW RESPONSE ==="
           cat response.json
           echo ""
 
-          # 提取内容（兼容多种返回结构）
           CONTENT=$(cat response.json | jq -r '.choices[0].message.content // .choices[0].delta.content // ""')
           if [ -z "$CONTENT" ] || [ "$CONTENT" = "null" ]; then
             CONTENT="DeepSeek 返回异常，原始数据：$(cat response.json)"
           fi
 
-          # 推送（检查 Token 是否为空）
           if [ -z "$PUSHPLUS_TOKEN" ]; then
-            echo "错误：PUSHPLUS_TOKEN 环境变量为空，请检查 Secrets 设置"
+            echo "错误：PUSHPLUS_TOKEN 未设置"
             exit 1
           fi
 
