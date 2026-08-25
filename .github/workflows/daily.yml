@@ -9,40 +9,59 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Install xmlstarlet
+        run: sudo apt-get update && sudo apt-get install -y xmlstarlet
+
       - name: Generate report and send
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
         run: |
+          # RSS 源列表（可增删改）
+          RSS_FEEDS=(
+            "https://feedmaker.kindle4rss.com/feeds/choice.thepaper.xml"
+            "https://feeds.reuters.com/reuters/businessNews"
+            "https://www.ft.com/?format=rss"
+          )
+
+          # 抓取新闻
+          NEWS=""
+          for feed in "${RSS_FEEDS[@]}"; do
+            echo "正在抓取: $feed"
+            items=$(curl -s --connect-timeout 10 "$feed" | xmlstarlet sel -t -m "//item[position()<=5]" -v "concat(title, ' | ', description)" -n 2>/dev/null || echo "")
+            NEWS="${NEWS}\n${items}"
+          done
+
+          # 如果抓取失败，报错退出
+          if [ -z "$NEWS" ] || [ "$NEWS" = "\n" ]; then
+            echo "错误：无法抓取任何 RSS 新闻"
+            exit 1
+          fi
+
+          # 获取当前日期
+          TODAY=$(date +"%Y年%m月%d日")
+
+          # 调用 DeepSeek（不联网，纯文本处理）
           curl -X POST https://api.deepseek.com/v1/chat/completions \
             -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{
               "model": "deepseek-v4-flash",
               "messages": [
-                {"role": "system", "content": "今天是2026年8月23日。请搜索并整理今天发生的财经、政治、科技新闻，至少10条，分类列出，标题《今日财经早餐》。每条附来源链接。禁止使用旧数据。"},
-                {"role": "user", "content": "请生成今日简报"}
+                {"role": "system", "content": "你是财经新闻编辑。请根据提供的新闻素材，按【财经】【政治】【科技】分类，整理成一份简报。每条新闻用一句话概括并附简短点评。标题为《今日财经早餐》+ 日期。只输出整理后的内容。"},
+                {"role": "user", "content": "今天是 '"$TODAY"'。以下是抓取到的新闻素材（标题 | 简介）：\n\n'"$NEWS"'"}
               ],
-              "enable_search": true,
-              "search_options": {"force": true},
               "max_tokens": 4096
             }' \
             -o response.json
 
-          echo "=== RAW RESPONSE ==="
-          cat response.json
-          echo ""
-
+          # 提取内容
           CONTENT=$(cat response.json | jq -r '.choices[0].message.content // .choices[0].delta.content // ""')
           if [ -z "$CONTENT" ] || [ "$CONTENT" = "null" ]; then
-            CONTENT="DeepSeek 返回异常，原始数据：$(cat response.json)"
+            CONTENT="AI 处理失败，原始新闻如下：\n$NEWS"
           fi
 
-          if [ -z "$PUSHPLUS_TOKEN" ]; then
-            echo "错误：PUSHPLUS_TOKEN 未设置"
-            exit 1
-          fi
-
+          # 推送到微信
           curl -X POST https://www.pushplus.plus/send \
             -H "Content-Type: application/json" \
             -d "{\"token\":\"$PUSHPLUS_TOKEN\",\"title\":\"今日财经早餐\",\"content\":\"$CONTENT\"}"
