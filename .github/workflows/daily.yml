@@ -30,6 +30,7 @@ jobs:
             echo "正在抓取: $feed"
             items=$(curl -s --connect-timeout 10 "$feed" | xmlstarlet sel -t -m "//item[position()<=5]" -v "concat(title, ' | ', description)" -n 2>/dev/null || echo "")
             NEWS="${NEWS}\n${items}"
+            echo "抓取到的新闻: $NEWS"
           done
 
           # 如果抓取失败，报错退出
